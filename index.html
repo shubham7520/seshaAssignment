@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            background-color: #f2f2f2;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .tab {
+            cursor: pointer;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .tab:not(.selected) {
+            /* padding: 10px 0; */
+
+        }
+
+        .tab.selected {
+            background-color: black;
+            color: white;
+            border: 1px solid black;
+            /* padding: 10px 0; */
+
+        }
+
+        .card {
+            display: flex;
+            position: relative;
+            flex-direction: column;
+            width: 200px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            box-sizing: border-box;
+        }
+
+
+
+        .card img {
+            max-width: 100%;
+            height: 70%;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .add-to-cart {
+            background-color: #000;
+            width: 100%;
+            font-size: 20px;
+            font-weight: 500;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @media screen and (max-width: 767px) {
+            .tab-container {
+                flex-direction: column;
+            }
+
+            .tab {
+                margin-bottom: 5px;
+            }
+
+            .tab-content {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .card {
+                width: 100%;
+            }
+        }
+
+        @media screen and (min-width: 768px) and (max-width: 1024px) {
+            .tab-container {
+                justify-content: space-around;
+            }
+
+            .tab {
+                margin-bottom: 0;
+                text-align: center;
+            }
+
+            .tab-content {
+                justify-content: space-around;
+            }
+
+            .card {
+                width: 45%;
+            }
+        }
+
+        @media screen and (min-width: 1025px) {
+            .tab-container {
+                width: 80%;
+                margin-inline: auto;
+            }
+
+            .tab {
+                margin-bottom: 0;
+                text-align: center;
+                border: none;
+                border-radius: 0;
+
+            }
+
+            .tab-content {
+                justify-content: space-around;
+            }
+
+            .card {
+                width: 23%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="font-size: 30px;text-align: center;">
+        <h1>SELECT YOUR CHOICE</h1>
+    </div>
+
+    <div class="tab-container">
+        <div class="tab" data-tab="men" onclick="showTab('men')">Men</div>
+        <div class="tab" data-tab="women" onclick="showTab('women')">Women</div>
+        <div class="tab" data-tab="kids" onclick="showTab('kids')">Kids</div>
+
+    </div>
+
+
+    <div id="men" class="tab-content"></div>
+    <div id="women" class="tab-content"></div>
+    <div id="kids" class="tab-content"></div>
+
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('https://cdn.shopify.com/s/files/1/0564/3685/0790/files/multiProduct.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        async function showTab(tabName) {
+            const data = await fetchData();
+
+            document.querySelectorAll('.tab-content').forEach(tabContent => {
+                tabContent.style.display = 'none';
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('selected');
+            });
+
+            const selectedTabContent = document.getElementById(tabName);
+            selectedTabContent.style.display = 'flex';
+
+            const selectedTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+            selectedTab.classList.add('selected');
+
+            const category = data.categories.find(cat => cat.category_name.toLowerCase() === tabName);
+            if (category) {
+                const products = category.category_products;
+                const tabContentElement = document.getElementById(tabName);
+                tabContentElement.innerHTML = ''; // Clear previous content
+
+                products.forEach(product => {
+                    const productElement = document.createElement('div');
+                    productElement.className = 'card';
+                    productElement.innerHTML = `
+                    <img src="${product.image}" alt="${product.title}">
+
+                    ${product.badge_text ? `<div style="position:absolute;padding:0 10px;top:10px;left:10px;background-color:white;border-radius:5px">
+                            <p>${product.badge_text}</p>
+                        </div>`: ``}
+                    <div>
+                    <div style='display: flex; gap: 12px; align-item:center;'>
+                        <p style="font-size:20px;font-weight: 600;
+                        ">${product.title.length > 16 ? product.title.substr(0, 16) + "..  " : product.title}</p>
+                        <p style="margin-block:auto">⚫   ${product.vendor}</p>
+                    </div>
+                    <div style="display:flex;font-size:16px;font-weight:600;gap:16px;">
+                        <p>Rs ${product.price}.00</p>
+                        <p style="color:grey;
+                text-decoration:line-through ;
+                        ">${product.compare_at_price || 'N/A'}.00</p>
+                        <p style="color:red">${calculatePercentageOff(product.price, product.compare_at_price)}% Off</p>
+                    </div>
+                    <button class="add-to-cart">Add to Cart</button>
+                    </div>
+                `;
+                    tabContentElement.appendChild(productElement);
+                });
+            }
+        }
+
+        function calculatePercentageOff(price, compareAtPrice) {
+            if (!compareAtPrice) {
+                return 0;
+            }
+
+            const percentageOff = ((compareAtPrice - price) / compareAtPrice) * 100;
+            return Math.round(percentageOff);
+        }
+
+        showTab('men');
+    </script>
+
+</body>
+
+</html>
